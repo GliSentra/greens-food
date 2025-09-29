@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { recipesData } from '@/app/data/recipes';
+import { getRecipes } from '@/app/data/recipes';
 import { HiOutlineClock } from 'react-icons/hi';
 
 // Metadata tidak berubah
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     description: 'Temukan resep sehat dan lezat menggunakan microgreens. Mulai dari salad, smoothie, hingga garnish untuk hidangan utama Anda.',
 };
 
-export default function ResepPage() {
-    // Array recipesData yang panjang sudah tidak ada di sini lagi
+export default async function ResepPage() {
+    const recipes = await getRecipes();
     return (
         <div className="bg-white text-gray-800">
             <Header />
@@ -33,7 +33,7 @@ export default function ResepPage() {
                 <section className="py-16 sm:py-20">
                     <div className="container mx-auto px-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                            {recipesData.map((recipe) => (
+                            {recipes.map((recipe) => (
                                 <Link key={recipe.id} href={`/resep/${recipe.slug}`} className="group flex flex-col bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 hover:shadow-xl">
                                     <div className="relative w-full h-56">
                                         <Image

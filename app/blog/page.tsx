@@ -4,14 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { blogData } from '@/app/data/blog';
+import { getBlogPosts } from '@/app/data/blog';
 
 export const metadata: Metadata = {
     title: 'Blog Glisentra | Tips, Manfaat, dan Inspirasi Microgreens',
     description: 'Baca artikel terbaru dari Glisentra tentang manfaat kesehatan, cara menanam, dan resep kreatif menggunakan microgreens.',
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+    const blogData = await getBlogPosts();
     return (
         <div className="bg-white text-gray-800">
             <Header />

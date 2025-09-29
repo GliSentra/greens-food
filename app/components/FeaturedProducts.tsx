@@ -1,11 +1,13 @@
 // app/components/FeaturedProducts.tsx
 import Image from 'next/image';
 import Link from 'next/link';
-import { productsData } from '@/app/data/products';
+import { getProducts } from '@/app/data/products';
 
-const featuredProducts = productsData.slice(0, 3);
-
-export default function FeaturedProducts() {
+export default async function FeaturedProducts() {
+    const allProducts = await getProducts();
+    const featuredProducts = [...allProducts] // Buat salinan array agar data asli tidak berubah
+        .sort((a, b) => (b.sold || 0) - (a.sold || 0)) // Urutkan berdasarkan 'sold' dari terbesar ke terkecil
+        .slice(0, 3); // Ambil 3 produk teratas
     return (
         <section className="py-16 sm:py-20 bg-gray-50">
             <div className="container mx-auto px-6">
