@@ -26,6 +26,27 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         notFound();
     }
 
+    const blogSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description: post.excerpt,
+        image: post.image,
+        author: {
+            '@type': 'Person',
+            name: post.author,
+        },
+        publisher: {
+            '@type': 'Organization',
+            name: 'Glisentra',
+            logo: {
+                '@type': 'ImageObject',
+                url: 'https://www.glisentra.com/images/icon.png', // Ganti dengan URL logo Anda
+            },
+        },
+        datePublished: post.publishedDate, // Asumsi formatnya YYYY-MM-DD
+    };
+
     // Logika pintar untuk artikel terkait, sama seperti di resep
     const relatedByCategory = allPosts.filter(
         p => p.category === post.category && p.slug !== post.slug
@@ -37,8 +58,11 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
     return (
         <div className="bg-white text-gray-800">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
+            />
             <Header />
-            {/* Kirim 'post' dan 'relatedPosts' sebagai props ke komponen client */}
             <BlogView post={post} relatedPosts={relatedPosts} />
             <Footer />
         </div>

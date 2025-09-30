@@ -17,16 +17,31 @@ import Image from 'next/image';
 // Tapi untuk saat ini, kita fokus pada fungsionalitas.
 
 export default function FaqPage() {
-    // State untuk melacak pertanyaan mana yang sedang terbuka
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
     const handleToggle = (index: number) => {
-        // Jika pertanyaan yang diklik sudah terbuka, tutup. Jika tidak, buka.
         setOpenIndex(openIndex === index ? null : index);
+    };
+
+    const faqSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqData.map(item => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+            },
+        })),
     };
 
     return (
         <div className="bg-white text-gray-800">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+            />
             <Header />
             <main>
                 <section className="relative flex flex-col justify-center items-center text-center px-6 

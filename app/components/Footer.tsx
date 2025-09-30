@@ -63,8 +63,8 @@ export default function Footer() {
                             Kediri, Jawa Timur, Indonesia
                         </p>
                         <div className="flex space-x-4">
-                            <Link href="#" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors"><FaInstagram size={24} /></Link>
-                            <Link href="#" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors"><FaTiktok size={20} /></Link>
+                            <Link href="https://www.instagram.com/glisentra/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors"><FaInstagram size={24} /></Link>
+                            <Link href="https://www.tiktok.com/@glisentra" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors"><FaTiktok size={20} /></Link>
                             <Link href="https://wa.me/6285952732791 " target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors"><FaWhatsapp size={24} /></Link>
                         </div>
                     </div>
