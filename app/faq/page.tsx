@@ -6,6 +6,7 @@ import { Metadata } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { faqData } from '@/app/data/faq';
+import Image from 'next/image';
 
 // Metadata tidak bisa dinamis di client component, jadi kita definisikan secara statis
 // export const metadata: Metadata = { 
@@ -28,10 +29,19 @@ export default function FaqPage() {
         <div className="bg-white text-gray-800">
             <Header />
             <main>
-                <section className="bg-gray-50 py-16">
-                    <div className="container mx-auto px-6 text-center">
+                <section className="relative flex flex-col justify-center items-center text-center px-6 
+                           py-10 md:py-20">
+                    <Image
+                        src="https://images.pexels.com/photos/5428829/pexels-photo-5428829.jpeg"
+                        alt="Berbagai wawasan seputar dunia microgreens"
+                        layout="fill"
+                        objectFit="cover"
+                        priority
+                        className="z-0 brightness-[.40]" // Efek gelap pada gambar
+                    />
+                    <div className="relative z-10 text-white">
                         <h1 className="text-4xl sm:text-5xl font-extrabold">Pertanyaan Umum (FAQ)</h1>
-                        <p className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">
+                        <p className="text-base sm:text-lg  mt-4 max-w-2xl mx-auto">
                             Menemukan jawaban yang Anda butuhkan tentang microgreens kami.
                         </p>
                     </div>

@@ -10,7 +10,7 @@ export default function Edukasi() {
                     {/* Kolom Gambar */}
                     <div className="w-full h-80 relative rounded-lg overflow-hidden">
                         <Image
-                            src="/images/edukasi.webp" // Link dari Pexels
+                            src="https://images.pexels.com/photos/740129/pexels-photo-740129.jpeg" // Link dari Pexels
                             alt="Microgreens ditaburkan di atas hidangan gourmet"
                             layout="fill"
                             objectFit="cover"

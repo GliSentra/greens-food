@@ -59,7 +59,7 @@ export default async function BlogPage() {
                     />
                     <div className="relative z-10 text-white">
                         <h1 className="text-4xl sm:text-5xl font-extrabold">Blog Glisentra</h1>
-                        <p className="text-base sm:text-lg  mt-4 max-w-2xl mx-auto">
+                        <p className="text-base sm:text-lg mt-4 max-w-2xl mx-auto">
                             Wawasan segar seputar dunia microgreens. Dari kebun kami, untuk Anda.
                         </p>
                     </div>
