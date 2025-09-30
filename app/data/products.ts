@@ -48,9 +48,9 @@ export async function getProducts(): Promise<Product[]> {
       alt: row[5],
       shortDescription: row[6],
       longDescription: row[7],
-      likes: parseInt(row[8]),
-      shares: parseInt(row[9]),
-      sold: parseInt(row[10]),
+      likes: parseInt(row[8]) || 0,
+      shares: parseInt(row[9]) || 0,
+      sold: parseInt(row[10]) || 0,
       // Ubah string JSON menjadi objek
       variants: JSON.parse(row[14] || "[]"),
       details: {
