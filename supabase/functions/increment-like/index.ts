@@ -5,12 +5,15 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    /* ... CORS ... */
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const { slug, tableName } = await req.json();
-    const supabaseAdmin = createClient(/* ... */);
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
     // Panggil fungsi SQL 'increment_likes'
     const { error } = await supabaseAdmin.rpc("increment_likes", {

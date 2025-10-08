@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
 
     // === BAGIAN YANG DITAMBAHKAN: PANGGIL API REVALIDATE ===
     try {
-      // Tentukan path yang relevan untuk di-revalidasi
       const revalidatePaths = [`/${tableName}`, `/${tableName}/${slug}`];
 
       for (const path of revalidatePaths) {
