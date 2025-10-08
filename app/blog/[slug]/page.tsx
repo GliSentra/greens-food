@@ -7,6 +7,7 @@ import { getPostBySlug, getBlogPosts } from '@/app/data/blog';
 import BlogView from '@/app/components/BlogView';
 import { Metadata } from 'next';
 
+export const revalidate = 180;
 // generateMetadata tidak berubah
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
     const post = await getPostBySlug(params.slug);

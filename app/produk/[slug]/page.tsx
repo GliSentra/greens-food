@@ -6,6 +6,7 @@ import { getProductBySlug } from '@/app/data/products';
 import ProductView from '@/app/components/ProductView';
 import { Metadata } from 'next';
 
+export const revalidate = 180;
 // (Metadata bisa tetap di sini karena ini adalah Server Component)
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
     const product = await getProductBySlug(params.slug);

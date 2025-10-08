@@ -6,9 +6,11 @@ import ProductList from '../components/ProductList';
 import { getProducts } from '@/app/data/products';
 import Image from 'next/image';
 
+export const revalidate = 180;
+
 export const metadata: Metadata = {
     title: 'Produk Microgreens | Glisentra - Jelajahi Semua Varian Kami',
-    description: 'Lihat katalog lengkap microgreens organik dari Glisentra. Tersedia Radish, Sunflower, Pea Shoots, Brokoli, dan lainnya. Pesan sekarang.',
+    description: 'Lihat katalog lengkap microgreens organik dari Glisentra. Pesan sekarang.',
 };
 
 export default async function ProdukPage() {

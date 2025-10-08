@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { getBlogPosts } from '@/app/data/blog';
 
+export const revalidate = 180;
 export const metadata: Metadata = {
     title: 'Blog Glisentra | Tips, Manfaat, dan Inspirasi Microgreens',
     description: 'Baca artikel terbaru dari Glisentra tentang manfaat kesehatan, cara menanam, dan resep kreatif menggunakan microgreens.',

@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import { getRecipes } from '@/app/data/recipes';
 import { FaRegClock, FaUsers } from 'react-icons/fa';
 
+export const revalidate = 180;
 // Metadata tidak berubah
 export const metadata: Metadata = {
     title: 'Resep & Inspirasi Microgreens | Glisentra',

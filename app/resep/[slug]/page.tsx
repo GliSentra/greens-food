@@ -6,6 +6,7 @@ import { getRecipeBySlug, getRecipes } from "@/app/data/recipes";
 import RecipeView from "@/app/components/RecipeView";
 import { Metadata } from 'next';
 
+export const revalidate = 180;
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
     const recipe = await getRecipeBySlug(params.slug);
 
