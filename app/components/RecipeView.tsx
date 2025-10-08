@@ -1,16 +1,18 @@
 // app/resep/[slug]/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import { Recipe } from '@/app/data/recipes';
 import { FaLeaf, FaShareAlt, FaWhatsapp, FaRegEye, FaHeart } from 'react-icons/fa';
 import { HiOutlineLink } from 'react-icons/hi';
+import { supabase } from '@/app/lib/supabase';
 
 export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: Recipe, relatedRecipes: Recipe[] }) {
     const [copyStatus, setCopyStatus] = useState('Salin Link');
+    const [currentViews, setCurrentViews] = useState(recipe.views);
     // const recipes = await getRecipes();
 
     const crumbs = [
@@ -32,6 +34,36 @@ export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: R
         }, 2000);
     };
 
+    useEffect(() => {
+        // Fungsi ini akan berjalan sekali saat komponen dimuat di browser
+        const incrementViewCount = async () => {
+            const storageKey = `viewed-recipe-${recipe.slug}`;
+            const hasViewed = localStorage.getItem(storageKey);
+
+            // Jika belum pernah dilihat (tidak ada di localStorage)
+            if (!hasViewed) {
+                try {
+                    // Panggil Edge Function kita
+                    const { error } = await supabase.functions.invoke('increment-view', {
+                        body: {
+                            slug: recipe.slug,
+                            tableName: 'recipes'
+                        },
+                    });
+
+                    if (error) throw error;
+
+                    setCurrentViews(prevViews => (prevViews || 0) + 1);
+                    localStorage.setItem(storageKey, 'true');
+                } catch (error) {
+                    console.error('Failed to increment view count:', error);
+                }
+            }
+        };
+
+        incrementViewCount();
+    }, [recipe.slug]);
+
     return (
         <main className="pt-0">
             <div className="no-print"><Breadcrumbs crumbs={crumbs} /></div>
@@ -51,9 +83,9 @@ export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: R
 
                             {/* Grup Metrik (Kiri) */}
                             <div className="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center text-gray-500">
-                                <div className="flex items-center gap-2" title={`${recipe.views?.toLocaleString('id-ID')} Dilihat`}>
+                                <div className="flex items-center gap-2" title={`${currentViews?.toLocaleString('id-ID')} Dilihat`}>
                                     <FaRegEye />
-                                    <span className="text-sm font-medium">{recipe.views?.toLocaleString('id-ID')}</span>
+                                    <span className="text-sm font-medium">{currentViews?.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="flex items-center gap-2" title={`${recipe.likes?.toLocaleString('id-ID')} Suka`}>
                                     <FaHeart />

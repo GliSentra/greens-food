@@ -3,17 +3,21 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import { Product } from '@/app/data/products'; // Pastikan tipe diekspor dari data
-import { FaHeart, FaShareAlt, FaStar, FaCheckCircle, FaTag, FaBookOpen, FaWhatsapp } from 'react-icons/fa';
+import { FaHeart, FaShareAlt, FaRegEye, FaStar, FaCheckCircle, FaTag, FaBookOpen, FaWhatsapp } from 'react-icons/fa';
 import { HiOutlineLink } from 'react-icons/hi';
+import { supabase } from '@/app/lib/supabase';
+import { formatCompactNumber } from '@/app/lib/utils';
 
 // Komponen ini sekarang menerima 'product' sebagai prop
 export default function ProductView({ product }: { product: Product }) {
     const [activeTab, setActiveTab] = useState('profil');
     const [selectedSize, setSelectedSize] = useState<string>(product.variants[0]?.size || '');
     const [copyStatus, setCopyStatus] = useState('Salin Link');
+    const [currentViews, setCurrentViews] = useState(product.views);
+    const [isLiked, setIsLiked] = useState(false);
+    const [currentLikes, setCurrentLikes] = useState(product.likes || 0);
 
     const crumbs = [
         { label: 'Beranda', href: '/' },
@@ -42,6 +46,69 @@ export default function ProductView({ product }: { product: Product }) {
     const whatsappMessage = encodeURIComponent(`Halo Glisentra, saya tertarik untuk memesan produk: ${product.name} (Ukuran: ${selectedSize}).`);
     const whatsappLink = `https://wa.me/6281234567890?text=${whatsappMessage}`;
 
+    useEffect(() => {
+        // Fungsi ini akan berjalan sekali saat komponen dimuat di browser
+        const incrementViewCount = async () => {
+            const storageKey = `viewed-product-${product.slug}`;
+            const hasViewed = localStorage.getItem(storageKey);
+
+            // Jika belum pernah dilihat (tidak ada di localStorage)
+            if (!hasViewed) {
+                try {
+                    // Panggil Edge Function kita
+                    const { error } = await supabase.functions.invoke('increment-view', {
+                        body: {
+                            slug: product.slug,
+                            tableName: 'products'
+                        },
+                    });
+
+                    if (error) throw error;
+
+                    setCurrentViews(prevViews => (prevViews || 0) + 1);
+                    localStorage.setItem(storageKey, 'true');
+                } catch (error) {
+                    console.error('Failed to increment view count:', error);
+                }
+            }
+        };
+
+        incrementViewCount();
+    }, [product.slug]); // Dijalankan setiap kali produk (slug) berubah
+
+    useEffect(() => {
+        const storageKey = `liked-product-${product.slug}`;
+        const hasLiked = localStorage.getItem(storageKey);
+        if (hasLiked) {
+            setIsLiked(true);
+        }
+    }, [product.slug]);
+
+    const handleLike = async () => {
+        if (isLiked) return; // Jangan lakukan apa-apa jika sudah di-like
+
+        const storageKey = `liked-product-${product.slug}`;
+
+        // 1. Optimistic UI update: langsung ubah tampilan
+        setIsLiked(true);
+        setCurrentLikes(prevLikes => prevLikes + 1);
+        localStorage.setItem(storageKey, 'true');
+
+        // 2. Kirim permintaan ke server
+        try {
+            const { error } = await supabase.functions.invoke('increment-like', {
+                body: { slug: product.slug, tableName: 'products' },
+            });
+            if (error) throw error;
+        } catch (error) {
+            // 3. Jika gagal, kembalikan tampilan seperti semula (rollback)
+            console.error('Failed to like product:', error);
+            setIsLiked(false);
+            setCurrentLikes(prevLikes => prevLikes - 1);
+            localStorage.removeItem(storageKey);
+        }
+    };
+
     return (
         <main className="pt-0">
             <Breadcrumbs crumbs={crumbs} />
@@ -54,17 +121,26 @@ export default function ProductView({ product }: { product: Product }) {
                         <h1 className="text-3xl sm:text-4xl font-extrabold">{product.name}</h1>
                         <p className="text-2xl sm:text-3xl font-bold text-green-600">{formattedDisplayPrice}</p>
                         <div className="flex items-center gap-x-4 text-gray-500">
-                            <div className="flex items-center gap-2" title={`${product.likes?.toLocaleString('id-ID')} Suka`}>
-                                <FaHeart />
-                                <span className="text-sm font-medium">{product.likes?.toLocaleString('id-ID')}</span>
+                            <div className="flex items-center gap-2" title={`${currentViews?.toLocaleString('id-ID')} Dilihat`}>
+                                <FaRegEye />
+                                <span className="text-sm font-medium">{formatCompactNumber(currentViews)}</span>
                             </div>
+                            <button
+                                onClick={handleLike}
+                                disabled={isLiked}
+                                className={`flex items-center gap-2 transition-colors duration-200 ${isLiked ? 'text-red-500 cursor-not-allowed' : 'text-gray-500 hover:text-red-500'}`}
+                                title={isLiked ? "Anda sudah menyukai ini" : "Sukai produk ini"}
+                            >
+                                <FaHeart />
+                                <span className="text-sm font-medium">{formatCompactNumber(currentLikes)}</span>
+                            </button>
                             <div className="flex items-center gap-2" title={`${product.shares?.toLocaleString('id-ID')} Kali Dibagikan`}>
                                 <FaShareAlt />
-                                <span className="text-sm font-medium">{product.shares?.toLocaleString('id-ID')}</span>
+                                <span className="text-sm font-medium">{formatCompactNumber(product.shares)}</span>
                             </div>
-                            <div className="flex items-center gap-2" title={`${product.sold?.toLocaleString('id-ID')} Dibeli`}>
+                            <div className="flex items-center gap-2" title={`${product.sold?.toLocaleString('id-ID')} Terjual`}>
                                 <FaStar />
-                                <span className="text-sm font-medium">{product.sold?.toLocaleString('id-ID')}</span>
+                                <span className="text-sm font-medium">{formatCompactNumber(product.sold)}</span>
                             </div>
                         </div>
                         <p className="text-lg text-gray-600">{product.longDescription}</p>

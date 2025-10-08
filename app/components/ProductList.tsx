@@ -1,30 +1,79 @@
 // app/components/ProductList.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/app/data/products';
-import { FaHeart, FaShareAlt, FaStar } from 'react-icons/fa';
+import { FaHeart, FaShareAlt, FaRegEye, FaStar } from 'react-icons/fa';
+import { formatCompactNumber } from '@/app/lib/utils';
+import { supabase } from '@/app/lib/supabase';
 
 export default function ProductList({ allProducts }: { allProducts: Product[] }) {
     const [sortOrder, setSortOrder] = useState('default');
     const [activeCategory, setActiveCategory] = useState('Semua');
+    const [likedSlugs, setLikedSlugs] = useState<Set<string>>(new Set());
+    const [products, setProducts] = useState(allProducts);
+
 
     const categories = ['Semua', ...new Set(allProducts.map(p => p.category))];
 
+    useEffect(() => {
+        const initialLikedSlugs = new Set<string>();
+        allProducts.forEach(product => {
+            const storageKey = `liked-product-${product.slug}`;
+            if (localStorage.getItem(storageKey)) {
+                initialLikedSlugs.add(product.slug);
+            }
+        });
+        setLikedSlugs(initialLikedSlugs);
+    }, [allProducts]);
+
+    const handleLike = async (slug: string, currentLikes: number) => {
+        const storageKey = `liked-product-${slug}`;
+        if (likedSlugs.has(slug)) return; // Sudah di-like, jangan lakukan apa-apa
+
+        // Optimistic UI Update
+        const newLikedSlugs = new Set(likedSlugs);
+        newLikedSlugs.add(slug);
+        setLikedSlugs(newLikedSlugs);
+
+        const updatedProducts = products.map(p =>
+            p.slug === slug ? { ...p, likes: (p.likes || 0) + 1 } : p
+        );
+        setProducts(updatedProducts);
+
+        localStorage.setItem(storageKey, 'true');
+
+        // Panggil Edge Function
+        try {
+            const { error } = await supabase.functions.invoke('increment-like', {
+                body: { slug: slug, tableName: 'products' },
+            });
+            if (error) throw error;
+        } catch (error) {
+            console.error('Failed to like product:', error);
+            // Rollback jika gagal
+            const revertedLikedSlugs = new Set(likedSlugs);
+            revertedLikedSlugs.delete(slug);
+            setLikedSlugs(revertedLikedSlugs);
+            setProducts(allProducts); // Kembalikan ke data asli
+            localStorage.removeItem(storageKey);
+        }
+    };
+
     const sortedAndFilteredProducts = useMemo(() => {
-        let products = [...allProducts];
+        let filtered = [...products];
         if (activeCategory !== 'Semua') {
-            products = products.filter(p => p.category === activeCategory);
+            filtered = filtered.filter(p => p.category === activeCategory);
         }
         if (sortOrder === 'price-asc') {
-            products.sort((a, b) => Math.min(...a.variants.map(v => v.price)) - Math.min(...b.variants.map(v => v.price)));
+            filtered.sort((a, b) => Math.min(...a.variants.map(v => v.price)) - Math.min(...b.variants.map(v => v.price)));
         } else if (sortOrder === 'price-desc') {
-            products.sort((a, b) => Math.min(...b.variants.map(v => v.price)) - Math.min(...a.variants.map(v => v.price)));
+            filtered.sort((a, b) => Math.min(...b.variants.map(v => v.price)) - Math.min(...a.variants.map(v => v.price)));
         }
-        return products;
-    }, [allProducts, activeCategory, sortOrder]);
+        return filtered;
+    }, [products, activeCategory, sortOrder]);
 
     return (
         <>
@@ -62,9 +111,8 @@ export default function ProductList({ allProducts }: { allProducts: Product[] })
                         {sortedAndFilteredProducts.map((product, index) => {
                             const startingPrice = Math.min(...product.variants.map(v => v.price));
                             const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(startingPrice);
-
-                            // Cek apakah indeks genap atau ganjil untuk efek zig-zag
                             const isEven = index % 2 === 0;
+                            const isLiked = likedSlugs.has(product.slug);
 
                             return (
                                 <article key={product.id} className="group bg-white p-3 sm:p-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300">
@@ -91,17 +139,25 @@ export default function ProductList({ allProducts }: { allProducts: Product[] })
                                             </Link>
                                             <p className="text-gray-600 leading-relaxed mb-4">{product.shortDescription}</p>
                                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mb-6">
-                                                <div className="flex items-center gap-1.5" title={`${product.likes?.toLocaleString('id-ID')} Suka`}>
-                                                    <FaHeart className="" />
-                                                    <span>{product.likes?.toLocaleString('id-ID')}</span>
+                                                <div className="flex items-center gap-1.5" title={`${product.views?.toLocaleString('id-ID')} Dilihat`}>
+                                                    <FaRegEye className="" />
+                                                    <span>{formatCompactNumber(product.views)}</span>
                                                 </div>
+                                                <button
+                                                    onClick={(e) => { e.preventDefault(); handleLike(product.slug, product.likes || 0); }}
+                                                    disabled={isLiked}
+                                                    className={`flex items-center gap-1.5 transition-colors ${isLiked ? 'text-red-500 cursor-not-allowed' : 'hover:text-red-500'}`}
+                                                >
+                                                    <FaHeart className="className={isLiked ? 'text-red-500' : 'text-gray-400'}" />
+                                                    <span>{formatCompactNumber(product.likes)}</span>
+                                                </button>
                                                 <div className="flex items-center gap-1.5" title={`${product.shares?.toLocaleString('id-ID')} Kali Dibagikan`}>
                                                     <FaShareAlt className="" />
-                                                    <span>{product.shares?.toLocaleString('id-ID')}</span>
+                                                    <span>{formatCompactNumber(product.shares)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5" title={`${product.sold?.toLocaleString('id-ID')} Terjual`}>
                                                     <FaStar className="" />
-                                                    <span>{product.sold?.toLocaleString('id-ID')}</span>
+                                                    <span>{formatCompactNumber(product.sold)}</span>
                                                 </div>
                                             </div>
                                             <p className="text-xl text-green-600 font-semibold mb-6">Mulai dari {formattedPrice}</p>

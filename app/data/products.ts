@@ -12,6 +12,7 @@ export type Product = {
   alt: string;
   shortDescription: string;
   longDescription: string;
+  views: number;
   likes: number;
   shares: number;
   sold: number;
