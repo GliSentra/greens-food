@@ -1,13 +1,15 @@
 // app/blog/[slug]/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import { Post, ContentBlock } from '@/app/data/blog';
 import { FaRegClock, FaRegEye, FaHeart, FaShareAlt, FaWhatsapp } from 'react-icons/fa';
 import { HiOutlineLink, HiOutlineChevronRight } from 'react-icons/hi';
+import { supabase } from '@/app/lib/supabase';
+import { formatCompactNumber } from '@/app/lib/utils';
 
 // Komponen RenderContentBlock tidak berubah
 function RenderContentBlock({ block }: { block: ContentBlock }) {
@@ -23,6 +25,9 @@ function RenderContentBlock({ block }: { block: ContentBlock }) {
 export default function BlogPostPage({ post, relatedPosts }: { post: Post, relatedPosts: Post[] }) {
     // const [post, setPost] = useState<Post | null>(null);
     const [copyStatus, setCopyStatus] = useState('Salin Link');
+    const [currentViews, setCurrentViews] = useState(post.views);
+    const [isLiked, setIsLiked] = useState(false);
+    const [currentLikes, setCurrentLikes] = useState(post.likes || 0);
 
     const wordsPerMinute = 200;
     const wordCount = post.content.map(b => (b.type === 'paragraph' || b.type === 'blockquote') ? b.text.split(/\s+/).length : 0).reduce((a, b) => a + b, 0);
@@ -44,6 +49,67 @@ export default function BlogPostPage({ post, relatedPosts }: { post: Post, relat
         setTimeout(() => setCopyStatus('Salin Link'), 2000);
     };
 
+    useEffect(() => {
+        // Fungsi ini akan berjalan sekali saat komponen dimuat di browser
+        const incrementViewCount = async () => {
+            const storageKey = `viewed-post-${post.slug}`;
+            const hasViewed = localStorage.getItem(storageKey);
+
+            // Jika belum pernah dilihat (tidak ada di localStorage)
+            if (!hasViewed) {
+                try {
+                    // Panggil Edge Function kita
+                    const { error } = await supabase.functions.invoke('increment-view', {
+                        body: {
+                            slug: post.slug,
+                            tableName: 'blogs'
+                        },
+                    });
+
+                    if (error) throw error;
+
+                    setCurrentViews(prevViews => (prevViews || 0) + 1);
+                    localStorage.setItem(storageKey, 'true');
+                } catch (error) {
+                    console.error('Failed to increment view count:', error);
+                }
+            }
+        };
+
+        incrementViewCount();
+    }, [post.slug]);
+
+    useEffect(() => {
+        const storageKey = `liked-post-${post.slug}`;
+        const hasLiked = localStorage.getItem(storageKey);
+        if (hasLiked) {
+            setIsLiked(true);
+        }
+    }, [post.slug]);
+
+    const handleLike = async () => {
+        if (isLiked) return;
+
+        const storageKey = `liked-post-${post.slug}`;
+
+        setIsLiked(true);
+        setCurrentLikes(prevLikes => prevLikes + 1);
+        localStorage.setItem(storageKey, 'true');
+
+        // 2. Kirim permintaan ke server
+        try {
+            const { error } = await supabase.functions.invoke('increment-like', {
+                body: { slug: post.slug, tableName: 'blogs' },
+            });
+            if (error) throw error;
+        } catch (error) {
+            // 3. Jika gagal, kembalikan tampilan seperti semula (rollback)
+            console.error('Failed to like product:', error);
+            setIsLiked(false);
+            setCurrentLikes(prevLikes => prevLikes - 1);
+            localStorage.removeItem(storageKey);
+        }
+    };
     return (
         <main className="pt-0">
             <Breadcrumbs crumbs={crumbs} />
@@ -58,8 +124,16 @@ export default function BlogPostPage({ post, relatedPosts }: { post: Post, relat
                                 <span className="flex items-center gap-1.5"><FaRegClock /> {readingTime} menit baca</span>
                                 {/* BARU: Tampilan Metrik (Views, Likes) */}
                                 <div className="flex items-center gap-x-4">
-                                    <span className="flex items-center gap-1.5" title={`${post.views?.toLocaleString('id-ID')} Dilihat`}><FaRegEye /> {post.views?.toLocaleString('id-ID')}</span>
-                                    <span className="flex items-center gap-1.5" title={`${post.likes?.toLocaleString('id-ID')} Suka`}><FaHeart /> {post.likes?.toLocaleString('id-ID')}</span>
+                                    <span className="flex items-center gap-1.5" title={`${currentViews?.toLocaleString('id-ID')} Dilihat`}><FaRegEye /> {formatCompactNumber(currentViews)}</span>
+                                    <button
+                                        onClick={handleLike}
+                                        disabled={isLiked}
+                                        className={`flex items-center gap-2 transition-colors duration-200 ${isLiked ? 'text-red-500 cursor-not-allowed' : 'text-gray-500 hover:text-red-500'}`}
+                                        title={isLiked ? "Anda sudah menyukai ini" : "Sukai postingan ini"}
+                                    >
+                                        <FaHeart />
+                                        <span className="text-sm font-medium">{formatCompactNumber(currentLikes)}</span>
+                                    </button>
                                     <span className="flex items-center gap-1.5" title={`${post.shares?.toLocaleString('id-ID')} Kali Dibagikan`}><FaShareAlt /> {post.shares?.toLocaleString('id-ID')}</span>
                                 </div>
                             </div>
@@ -79,7 +153,7 @@ export default function BlogPostPage({ post, relatedPosts }: { post: Post, relat
                     {/* SIDEBAR YANG DIDISAIN ULANG */}
                     <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-28">
                         {/* Widget Bagikan */}
-                        <div className="p-6 bg-gray-50 rounded-lg">
+                        <div className="p-6 bg-gray-50 rounded-lg shadow-md">
                             <h3 className="text-xl font-bold mb-4 border-b pb-2">Bagikan Artikel</h3>
                             <div className="flex items-center justify-center gap-4">
                                 <a href={`https://api.whatsapp.com/send?text=${shareText} ${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors" title="Bagikan via WhatsApp">
@@ -93,22 +167,23 @@ export default function BlogPostPage({ post, relatedPosts }: { post: Post, relat
                         </div>
 
                         {/* Widget Artikel Terkait */}
-                        <div className="p-6 bg-gray-50 rounded-lg">
-                            <h3 className="text-xl font-bold mb-4 border-b pb-2">Artikel Terkait</h3>
-                            <ul className="space-y-3">
-                                {relatedPosts.map(p => (
-                                    <li key={p.id}>
-                                        <Link href={`/blog/${p.slug}`} className="flex items-start group">
-                                            <HiOutlineChevronRight className="w-5 h-5 mt-1 mr-2 text-green-500 flex-shrink-0" />
-                                            <span className="group-hover:text-green-600 transition-colors text-sm">{p.title}</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        {relatedPosts.length > 0 ? (
+                            <div className="p-6 bg-gray-50 rounded-lg shadow-md">
+                                <h3 className="text-xl font-bold mb-4 border-b pb-2">Artikel Terkait</h3>
+                                <ul className="space-y-3">
+                                    {relatedPosts.map(p => (
+                                        <li key={p.id}>
+                                            <Link href={`/blog/${p.slug}`} className="flex items-start group">
+                                                <HiOutlineChevronRight className="w-5 h-5 mt-1 mr-2 text-green-500 flex-shrink-0" />
+                                                <span className="group-hover:text-green-600 transition-colors text-sm">{p.title}</span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>) : null}
 
                         {/* Widget CTA Produk */}
-                        <div className="p-6 bg-green-600 text-white rounded-lg text-center">
+                        <div className="p-6 bg-green-600 text-white rounded-lg text-center shadow-md">
                             <h3 className="text-xl font-bold mb-2">Jelajahi Produk Kami</h3>
                             <p className="text-green-100 mb-4 text-sm">Temukan microgreens segar untuk melengkapi gaya hidup sehat Anda.</p>
                             <Link href="/produk" className="inline-block bg-white text-green-700 font-bold py-2 px-5 rounded-full text-sm hover:bg-green-50 transition">

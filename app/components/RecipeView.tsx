@@ -9,10 +9,13 @@ import { Recipe } from '@/app/data/recipes';
 import { FaLeaf, FaShareAlt, FaWhatsapp, FaRegEye, FaHeart } from 'react-icons/fa';
 import { HiOutlineLink } from 'react-icons/hi';
 import { supabase } from '@/app/lib/supabase';
+import { formatCompactNumber } from '@/app/lib/utils';
 
 export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: Recipe, relatedRecipes: Recipe[] }) {
     const [copyStatus, setCopyStatus] = useState('Salin Link');
     const [currentViews, setCurrentViews] = useState(recipe.views);
+    const [isLiked, setIsLiked] = useState(false);
+    const [currentLikes, setCurrentLikes] = useState(recipe.likes || 0);
     // const recipes = await getRecipes();
 
     const crumbs = [
@@ -64,6 +67,37 @@ export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: R
         incrementViewCount();
     }, [recipe.slug]);
 
+    useEffect(() => {
+        const storageKey = `liked-recipe-${recipe.slug}`;
+        const hasLiked = localStorage.getItem(storageKey);
+        if (hasLiked) {
+            setIsLiked(true);
+        }
+    }, [recipe.slug]);
+
+    const handleLike = async () => {
+        if (isLiked) return;
+
+        const storageKey = `liked-recipe-${recipe.slug}`;
+
+        setIsLiked(true);
+        setCurrentLikes(prevLikes => prevLikes + 1);
+        localStorage.setItem(storageKey, 'true');
+
+        // 2. Kirim permintaan ke server
+        try {
+            const { error } = await supabase.functions.invoke('increment-like', {
+                body: { slug: recipe.slug, tableName: 'recipes' },
+            });
+            if (error) throw error;
+        } catch (error) {
+            // 3. Jika gagal, kembalikan tampilan seperti semula (rollback)
+            console.error('Failed to like product:', error);
+            setIsLiked(false);
+            setCurrentLikes(prevLikes => prevLikes - 1);
+            localStorage.removeItem(storageKey);
+        }
+    };
     return (
         <main className="pt-0">
             <div className="no-print"><Breadcrumbs crumbs={crumbs} /></div>
@@ -85,12 +119,17 @@ export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: R
                             <div className="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center text-gray-500">
                                 <div className="flex items-center gap-2" title={`${currentViews?.toLocaleString('id-ID')} Dilihat`}>
                                     <FaRegEye />
-                                    <span className="text-sm font-medium">{currentViews?.toLocaleString('id-ID')}</span>
+                                    <span className="text-sm font-medium">{formatCompactNumber(currentViews)}</span>
                                 </div>
-                                <div className="flex items-center gap-2" title={`${recipe.likes?.toLocaleString('id-ID')} Suka`}>
+                                <button
+                                    onClick={handleLike}
+                                    disabled={isLiked}
+                                    className={`flex items-center gap-2 transition-colors duration-200 ${isLiked ? 'text-red-500 cursor-not-allowed' : 'text-gray-500 hover:text-red-500'}`}
+                                    title={isLiked ? "Anda sudah menyukai ini" : "Sukai produk ini"}
+                                >
                                     <FaHeart />
-                                    <span className="text-sm font-medium">{recipe.likes?.toLocaleString('id-ID')}</span>
-                                </div>
+                                    <span className="text-sm font-medium">{formatCompactNumber(currentLikes)}</span>
+                                </button>
                                 <div className="flex items-center gap-2" title={`${recipe.shares?.toLocaleString('id-ID')} Kali Dibagikan`}>
                                     <FaShareAlt />
                                     <span className="text-sm font-medium">{recipe.shares?.toLocaleString('id-ID')}</span>
@@ -160,25 +199,26 @@ export default function RecipeDetailPage({ recipe, relatedRecipes }: { recipe: R
                     </div>
                 </div>
             </section> */}
-            <section className="no-print pt-16 bg-gray-50 mb-16">
-                <div className="container mx-auto px-6 max-w-5xl">
-                    <h2 className="text-3xl font-bold text-center mb-10">Anda Mungkin Juga Suka</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                        {/* Menggunakan 'relatedRecipes' dari props */}
-                        {relatedRecipes.map(related => (
-                            <Link key={related.id} href={`/resep/${related.slug}`} className="group block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                                <div className="relative w-full h-40">
-                                    <Image src={related.image} alt={related.alt} layout="fill" objectFit="cover" className="transition-transform duration-300 group-hover:scale-110" />
-                                </div>
-                                <div className="p-4">
-                                    <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">{related.category}</span>
-                                    <h3 className="text-lg font-bold mt-2 group-hover:text-green-600 transition-colors">{related.title}</h3>
-                                </div>
-                            </Link>
-                        ))}
+            {relatedRecipes.length > 0 ? (
+                <section className="no-print pt-16 bg-gray-50 mb-16">
+                    <div className="container mx-auto px-6 max-w-5xl">
+                        <h2 className="text-3xl font-bold text-center mb-10">Anda Mungkin Juga Suka</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                            {/* Menggunakan 'relatedRecipes' dari props */}
+                            {relatedRecipes.map(related => (
+                                <Link key={related.id} href={`/resep/${related.slug}`} className="group block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                                    <div className="relative w-full h-40">
+                                        <Image src={related.image} alt={related.alt} layout="fill" objectFit="cover" className="transition-transform duration-300 group-hover:scale-110" />
+                                    </div>
+                                    <div className="p-4">
+                                        <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">{related.category}</span>
+                                        <h3 className="text-lg font-bold mt-2 group-hover:text-green-600 transition-colors">{related.title}</h3>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>) : null}
         </main>
     );
 }
