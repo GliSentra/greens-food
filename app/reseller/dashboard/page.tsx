@@ -57,11 +57,13 @@ export default function ResellerDashboardPage() {
     return (
         <ResellerLayout>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang, {dummyResellerData.name}!</h1>
-                <p className="text-gray-600">Ini adalah ringkasan performa penjualan Anda.</p>
+                <div className="" id="reseller-welcome">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang, {dummyResellerData.name}!</h1>
+                    <p className="text-gray-600">Ini adalah ringkasan performa penjualan Anda.</p>
+                </div>
 
                 {/* Kartu Statistik */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div id="reseller-stats" className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                     <StatCard
                         icon={<FaChartLine size={24} />}
                         title="Penjualan Bulan Ini"
@@ -80,7 +82,7 @@ export default function ResellerDashboardPage() {
                 </div>
 
                 {/* Aksi Cepat */}
-                <div className="mt-10">
+                <div className="mt-10" id="reseller-quick-actions">
                     <h2 className="text-xl font-bold mb-4 text-gray-800">Aksi Cepat</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Link href="/reseller/order" className="bg-green-600 text-white p-6 rounded-lg shadow-md hover:bg-green-700 transition-colors flex items-center gap-4">
