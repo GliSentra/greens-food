@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { FaRegQuestionCircle, FaRegStar } from "react-icons/fa";
-import { HiOutlineHome, HiOutlineViewGridAdd, HiOutlinePlay, HiOutlineQuestionMarkCircle, HiOutlinePhotograph, HiOutlineClipboardList, HiOutlineLogout } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineViewGridAdd, HiOutlinePlay, HiOutlineUserCircle, HiOutlinePhotograph, HiOutlineClipboardList, HiOutlineLogout } from 'react-icons/hi';
 
 // Tentukan tipe untuk props
 interface SidebarProps {
@@ -82,6 +82,10 @@ export default function Sidebar({ isOpen, onClose, onStartTour }: SidebarProps) 
 
                 {/* Logout Section */}
                 <div className="px-4 py-4 border-t border-gray-700">
+                    <Link href="/reseller/profile" onClick={onClose} className="flex w-full items-center gap-x-3 px-3 py-2.5 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                        <HiOutlineUserCircle size={22} />
+                        <span>Profil Saya</span>
+                    </Link>
                     <button
                         onClick={() => {
                             onStartTour(); // Panggil fungsi dari layout

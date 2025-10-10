@@ -1,13 +1,16 @@
+// app/reseller/dashboard/page.tsx
+'use client'; // Diperlukan karena kita akan menggunakan komponen client lain
+
 import ResellerLayout from "@/app/components/ResellerLayout";
 import Link from "next/link";
-import { FaBoxOpen, FaChartLine, FaPlusCircle, FaHistory } from "react-icons/fa";
+import { FaBoxOpen, FaChartLine, FaPlusCircle, FaHistory, FaStar, FaShippingFast } from "react-icons/fa";
 
-// Data dummy untuk desain
+// Data dummy yang lebih relevan
 const dummyResellerData = {
     name: "Toko Berkah",
     salesThisMonth: 1250000,
-    ordersThisMonth: 15,
-    topProduct: "Red Radish",
+    ordersInProcess: 2,
+    pointsBalance: 1250,
     recentOrders: [
         { id: "PO-GLS-0015", date: "2025-10-09", total: 350000, status: "Menunggu Konfirmasi" },
         { id: "PO-GLS-0014", date: "2025-10-08", total: 150000, status: "Dikirim" },
@@ -15,8 +18,6 @@ const dummyResellerData = {
     ],
 };
 
-// Komponen helper untuk badge status
-// (Bisa juga dipindah ke file terpisah seperti app/components/StatusBadge.tsx)
 function StatusBadge({ status }: { status: string }) {
     const baseClasses = "px-2.5 py-1 rounded-full text-xs font-semibold inline-block";
     let colorClasses = "";
@@ -36,7 +37,7 @@ function StatusBadge({ status }: { status: string }) {
     return <span className={`${baseClasses} ${colorClasses}`}>{status}</span>;
 }
 
-// Komponen helper untuk kartu statistik
+// Komponen kartu statistik (sedikit disempurnakan)
 function StatCard({ icon, title, value }: { icon: React.ReactNode, title: string, value: string | number }) {
     return (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
@@ -56,43 +57,48 @@ function StatCard({ icon, title, value }: { icon: React.ReactNode, title: string
 export default function ResellerDashboardPage() {
     return (
         <ResellerLayout>
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
-                <div className="" id="reseller-welcome">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+                <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang, {dummyResellerData.name}!</h1>
                     <p className="text-gray-600">Ini adalah ringkasan performa penjualan Anda.</p>
                 </div>
 
-                {/* Kartu Statistik */}
-                <div id="reseller-stats" className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                {/* Kartu Statistik yang Diperbarui */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard
                         icon={<FaChartLine size={24} />}
                         title="Penjualan Bulan Ini"
                         value={new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(dummyResellerData.salesThisMonth)}
                     />
                     <StatCard
-                        icon={<FaBoxOpen size={24} />}
-                        title="Pesanan Bulan Ini"
-                        value={dummyResellerData.ordersThisMonth}
+                        icon={<FaStar size={24} />}
+                        title="Total Poin Anda"
+                        value={dummyResellerData.pointsBalance.toLocaleString('id-ID')}
                     />
                     <StatCard
-                        icon={<FaBoxOpen size={24} />} // Sebaiknya ganti ikon jika ada yang lebih cocok
-                        title="Produk Terlaris"
-                        value={dummyResellerData.topProduct}
+                        icon={<FaBoxOpen size={24} />}
+                        title="Total Pesanan"
+                        value={dummyResellerData.recentOrders.length}
+                    />
+                    <StatCard
+                        icon={<FaShippingFast size={24} />}
+                        title="Pesanan Diproses"
+                        value={dummyResellerData.ordersInProcess}
                     />
                 </div>
 
                 {/* Aksi Cepat */}
-                <div className="mt-10" id="reseller-quick-actions">
+                <div>
                     <h2 className="text-xl font-bold mb-4 text-gray-800">Aksi Cepat</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Link href="/reseller/order" className="bg-green-600 text-white p-6 rounded-lg shadow-md hover:bg-green-700 transition-colors flex items-center gap-4">
+                        <Link href="/reseller/order" className="bg-green-600 text-white p-6 rounded-lg shadow-lg hover:bg-green-700 transition-transform hover:-translate-y-1 flex items-center gap-4">
                             <FaPlusCircle size={32} />
                             <div>
                                 <p className="font-bold text-lg">Buat Pesanan Baru</p>
                                 <p className="text-sm text-green-100">Mulai Pre-Order untuk stok Anda.</p>
                             </div>
                         </Link>
-                        <Link href="/reseller/history" className="bg-white border border-gray-200 p-6 rounded-lg shadow-md hover:bg-gray-50 transition-colors flex items-center gap-4">
+                        <Link href="/reseller/history" className="bg-white border border-gray-200 p-6 rounded-lg shadow-lg hover:bg-gray-50 transition-transform hover:-translate-y-1 flex items-center gap-4">
                             <FaHistory size={32} className="text-gray-600" />
                             <div>
                                 <p className="font-bold text-lg text-gray-800">Lihat Riwayat</p>
@@ -102,9 +108,9 @@ export default function ResellerDashboardPage() {
                     </div>
                 </div>
 
-                {/* Tabel Riwayat Pesanan Terbaru */}
-                <div className="mt-10 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <h2 className="text-xl font-bold mb-4 text-gray-800">Pesanan Terbaru</h2>
+                {/* Tabel Pesanan Terbaru */}
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 className="text-xl font-bold mb-4">Pesanan Terbaru</h2>
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-gray-50 border-b-2 font-medium text-gray-600">
@@ -113,7 +119,6 @@ export default function ResellerDashboardPage() {
                                     <th scope="col" className="px-6 py-4">Tanggal</th>
                                     <th scope="col" className="px-6 py-4">Total</th>
                                     <th scope="col" className="px-6 py-4">Status</th>
-                                    <th scope="col" className="px-6 py-4"><span className="sr-only">Aksi</span></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -124,11 +129,6 @@ export default function ResellerDashboardPage() {
                                         <td className="px-6 py-4 text-gray-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(order.total)}</td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={order.status} />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <Link href="/reseller/history" className="text-green-600 hover:text-green-800 font-semibold">
-                                                Lihat Detail
-                                            </Link>
                                         </td>
                                     </tr>
                                 ))}
