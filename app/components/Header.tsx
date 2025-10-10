@@ -40,7 +40,7 @@ export default function Header() {
                         width={120} // Prop ini untuk aspect ratio
                         height={40}
                         src="/teks.svg"
-                        alt="Teks Glisentra"
+                        alt="Glisentra"
                         priority
                     />
                 </Link>

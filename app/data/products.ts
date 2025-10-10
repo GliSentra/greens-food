@@ -24,6 +24,7 @@ export type Product = {
   variants: {
     size: string;
     price: number;
+    price_reseller: number;
   }[];
 };
 
